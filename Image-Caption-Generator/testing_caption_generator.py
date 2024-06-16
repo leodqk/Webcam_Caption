@@ -59,7 +59,7 @@ def word_for_id(integer, tokenizer):
 
 
 def generate_desc(model, tokenizer, photo, max_length):
-    in_text = 'start'
+    in_text = ''
     for i in range(max_length):
         sequence = tokenizer.texts_to_sequences([in_text])[0]
         sequence = pad_sequences([sequence], maxlen=max_length)
@@ -84,7 +84,6 @@ def caption_image(img_path):
     photo = extract_features(img_path, xception_model)
     img = Image.open(img_path)
     description = generate_desc(model, tokenizer, photo, max_length)
-    print("\n\n")
-    print(description)
+    return description
 
 
