@@ -2,7 +2,12 @@ import cv2
 import os
 import time
 import testing_caption_generator
+from kafka import KafkaProducer
 
+producer = KafkaProducer(
+    bootstrap_servers='localhost:9092',  # Địa chỉ Kafka broker của bạn
+    value_serializer=lambda v: v.encode('utf-8')  # Tuỳ chọn serializer cho chuỗi văn bản
+)
 
 def extract_key_frames_from_webcam(
     output_folder, interval_seconds=2, caption_display_duration=5
@@ -125,9 +130,11 @@ def extract_key_frames_from_video(
             frames.append(frame)
             output_path = f"{output_folder}/frame_{len(frames)-1}.jpg"
             cv2.imwrite(output_path, frame)
+            caption_to_kafka = testing_caption_generator.caption_image(output_path)
+            producer.send('quickstart-events', value=caption_to_kafka)
 
             try:
-                current_caption = testing_caption_generator.caption_image(output_path)
+                current_caption = caption_to_kafka
             except Exception as e:
                 current_caption = f"Error generating caption: {e}"
                 print(current_caption)
@@ -142,7 +149,6 @@ def extract_key_frames_from_video(
             text_size, _ = cv2.getTextSize(current_caption, font, font_scale, thickness)
             text_x = 10
             text_y = frame.shape[0] - 10
-
             frame_with_caption = cv2.putText(
                 frame,
                 current_caption,
@@ -166,11 +172,14 @@ def extract_key_frames_from_video(
 
     cap.release()
     cv2.destroyAllWindows()
+    producer.flush()
+    producer.close()
     print("Stopped capturing frames from video.")
+
 
 
 # # Example usage
 output_folder = "result"
-video_path = "E:\AIRC 2024\Webcam_Caption\Image-Caption-Generator\data test\Test1.mp4"
-extract_key_frames_from_webcam(output_folder)
-# extract_key_frames_from_video(video_path, output_folder)
+video_path = "TestVidMain.mp4"
+# extract_key_frames_from_webcam(output_folder)
+extract_key_frames_from_video(video_path, output_folder)
